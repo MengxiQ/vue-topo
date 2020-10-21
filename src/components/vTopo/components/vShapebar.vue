@@ -6,8 +6,12 @@
  -->
 <template>
   <div class="shapebarWrap">
-    <div class="shapebarHead">
+    <div class="shapebarHead" style="position: relative">
       设备列表
+      <el-button class="manage-btn" v-if="shapeNodeLstData.length > 0" @click.stop.prevent="isManage = !isManage"
+                 type="danger" size="mini"
+                 >
+        {{isManage?'隐藏':'管理'}}</el-button>
       <el-popover
         placement="right"
         trigger="click"
@@ -15,15 +19,15 @@
       >
         <div class="select-equipment-contair">
           <h1 style="font-weight: bold;padding: 0 0 10px 0;">添加设备</h1>
-          <el-form size="mini" :inline="true" :model="formInline" class="demo-form-inline">
+          <el-form size="mini" :inline="true" :model="seachData" class="demo-form-inline">
             <el-form-item label="起始IP:">
-              <el-input v-model="beginIP" placeholder="起始IP"></el-input>
+              <el-input v-model="seachData.beginIP" placeholder="起始IP"></el-input>
             </el-form-item>
             <el-form-item label="结束IP:">
-              <el-input v-model="endIP" placeholder="结束IP" ></el-input>
+              <el-input v-model="seachData.endIP" placeholder="结束IP" ></el-input>
             </el-form-item>
             <el-form-item>
-              <el-button icon="el-icon-search" type="primary" @click="onSubmit">查询</el-button>
+              <el-button icon="el-icon-search" type="primary" @click="onSearch">查询</el-button>
             </el-form-item>
             <ul class="select-equipment-contair-show">
               <el-table
@@ -61,17 +65,25 @@
           <el-button style="float: right;margin-right: 10px" type="primary"  size="mini">添加</el-button>
 
         </div>
+
         <el-button slot="reference"
-                   style="float: right; margin-top: 10px"
-                   icon="el-icon-plus"
-                   type="success"
+                   type="primary"
+                   class="manage-btn"
                    size="mini">
+            添加
           </el-button>
       </el-popover>
-
     </div>
-    <div class="shapeNodeLstWrap">
-      <ul class="shapeNodeLst">
+    <div class="shapeNodeLstWrap" style="position: relative">
+      <!--      切换显示按钮 el-icon-s-fold / el-icon-menu -->
+            <el-button title="切换显示方式"
+              @click.stop.prevent="itemShowType = !itemShowType"
+              :icon="itemShowType ? 'el-icon-menu':'el-icon-s-fold'" circle size="mini"
+                 class="manage-btn"
+                 style="position: absolute; right: -2px;top: -7px;z-index: 100"></el-button>
+
+<!--      显示方式：图标-->
+      <ul class="shapeNodeLst" v-if="itemShowType">
         <li v-for="(ele,key) in shapeNodeLstData" :key="key" class="shapeNode"
             @mousedown.stop.prevent="dragShapeNode(shapeNodeLstData,key,$event)" :title="ele.name">
           <div class="shapeIcon">
@@ -79,10 +91,22 @@
           </div>
           <div class="shapeName">{{ ele.name }}</div>
           <i v-if="isManage" class="el-icon-delete delete-btn" title="删除" @click.stop.prevent="deleteNode(key)"></i>
-
         </li>
       </ul>
-      <el-button v-if="shapeNodeLstData.length > 0" @click.stop.prevent="isManage = !isManage" type="danger" size="mini" style="float: right; margin-top: 10px" >{{isManage?'隐藏':'管理'}}</el-button>
+      <!--      显示方式：列表-->
+      <ul class="shapeNodeLst" v-else>
+        <li v-for="(ele,key) in shapeNodeLstData" :key="key" class="shapeNode-list"
+            @mousedown.stop.prevent="dragShapeNode(shapeNodeLstData,key,$event)" :title="ele.name">
+          <div class="shapeIcon-list">
+            <img class="shapeIconImgi-list" :src="ele.icon"/>
+          </div>
+          <div class="shapeName-list">{{ ele.name }}</div>
+          <div class="shapeName-list" style="color: #3a8ee6">{{ ele.ip }}</div>
+          <div class="shapeName-list">{{ ele.netype }}</div>
+
+          <i v-if="isManage" class="el-icon-delete delete-btn" title="删除" @click.stop.prevent="deleteNode(key)"></i>
+        </li>
+      </ul>
       <p style="color: #909399; padding: 50px 0px;text-align: left">tips：del键--删除节点或者连线。</p>
     </div>
   </div>
@@ -102,8 +126,13 @@ export default {
   },
   data() {
     return {
+      itemShowType:true,
       // shapeNodeLstData:[] //shapebar数据
       isManage:false,
+      seachData:{
+        beginIP:'',
+        endIP:''
+      },
       tableData:[
         {ip:'192.168.0.100',name:'CE1',type:'CE交换机'},
         {ip:'192.168.0.100',name:'CE1',type:'CE交换机'},
@@ -118,6 +147,14 @@ export default {
   },
   components: {},
   methods: {
+    //点击查询
+    onSearch(){
+      console.log(this.seachData)
+    },
+    //多选
+    handleSelectionChange(){
+      console.log('handleSelectionChange')
+    },
     dragShapeNode(shapeNodeLstData, key, $event) {
       this.$emit('click', shapeNodeLstData, key, $event);
     },
@@ -146,6 +183,9 @@ export default {
 <style lang="less" scoped>
 @border-color: #aaaaaa;
 /*svgMain左侧工具栏*/
+.manage-btn{
+  float: right; margin-top: 7px; transform: scale(0.8)
+}
 .shapebarWrap {
   height: 100%;
   box-sizing: border-box;
@@ -154,11 +194,11 @@ export default {
   width: 250px;
   border: 1px solid @border-color;
   border-right: 0;
-  background: @theme-color;
+  background: white;
 
   .shapebarHead {
-    height: 50px;
-    line-height: 50px;
+    height: 40px;
+    line-height: 40px;
     padding: 0 20px;
     text-align: left;
     font-size: 14px;
@@ -169,6 +209,8 @@ export default {
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;
+    //border-bottom: 1px  solid @border-color;
+    box-shadow: rgba(0,0,0,0.2) 0 1px;
   }
 
   .shapeNodeLstWrap {
@@ -182,6 +224,7 @@ export default {
       display: flex;
       flex-wrap: wrap;
       box-sizing: border-box;
+
     }
   }
 }
@@ -207,20 +250,56 @@ export default {
     margin-right: 0
   }
 }
+.shapeNode-list {
+  position: relative;
+  margin-top: 5px;
+  cursor: pointer;
+  padding: 2px 5px;
+  -webkit-user-select: none;
+  user-select: none;
+  //background-color: #fff;
+  -webkit-user-select: none;
+  user-select: none;
+  width: 100%;
+  box-sizing: border-box;
+  display: block;
+  text-align: left;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  //background: rebeccapurple;
 
+}
+.shapeNode-list:hover{
+  background: #e4f1ff;
+}
 /*移动的node*/
 .shapeIcon {
   text-align: center;
   -webkit-user-select: none;
   user-select: none;
-
+}
+.shapeIcon-list {
+  text-align: center;
+  -webkit-user-select: none;
+  user-select: none;
+  display: inline-block;
+}
   .shapeIconImg {
     width: 28px;
     height: 28px;
     -webkit-user-select: none;
     user-select: none;
   }
-}
+
+  .shapeIconImgi-list{
+    width: 20px;
+    height: 20px;
+    -webkit-user-select: none;
+    user-select: none;
+    display: inline-block;
+  }
+
 
 .shapeName {
   font-size: 12px;
@@ -232,6 +311,17 @@ export default {
   -webkit-user-select: none;
   user-select: none;
   color: #000
+}
+.shapeName-list {
+  font-size: 12px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  -webkit-user-select: none;
+  user-select: none;
+  color: #000;
+  display: inline-block;
+  margin-left: 2px;
 }
 .delete-btn{
   color: red;
